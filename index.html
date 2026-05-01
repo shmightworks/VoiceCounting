@@ -1,0 +1,70 @@
+<html lang="en">
+    <head>
+        <script>
+            let state = "";            
+            
+            let voices = [];
+            let utterance = null;
+            function populateVoices() {
+                let newvoices = speechSynthesis.getVoices();
+                if (newvoices.length > voices.length) {
+                    voices = newvoices;
+                    voiceSelect.innerHTML = "";
+                    voices.forEach((voice, i) => {
+                        const option = document.createElement("option");
+                        option.value = i;
+                        option.textContent = `${voice.name} (${voice.lang})${voice.default ? " [default]" : ""}`;
+                        voiceSelect.appendChild(option);
+                    });
+                }
+            }
+            function SpeakText() {
+                if (state != "speaking")
+                    return;
+                utterance = new SpeechSynthesisUtterance(speaktext.value);
+                utterance.rate = 1;       // Set the speaking rate (0.1 to 10, default is 1)
+                utterance.pitch = 1;      // Set the pitch (0 to 2, default is 1)
+                utterance.volume = 1;     // Set the volume (0 to 1, default is 1)
+                const selectedIndex = voiceSelect.value;
+                if (voices[selectedIndex]) {
+                    utterance.voice = voices[selectedIndex];
+                }
+                utterance.onend = function () {
+                    speaktext.value = parseInt(speaktext.value) + 1;
+                    SpeakText();
+                };
+                utterance.onerror = function (event) {
+                    console.log(`An error has occurred with the speech synthesis: ${event.error}`);
+                };
+                speechSynthesis.speak(utterance);
+            }
+        </script>
+    </head>
+    <body>
+        <input type="text" id="speaktext" value="1"/>
+        <select id="voices"></select>
+        <button id="button">Start</button>
+        <script>
+            const voiceSelect = document.getElementById("voices");
+            const button = document.getElementById("button");
+            const speaktext = document.getElementById("speaktext");
+            speechSynthesis.onvoiceschanged = populateVoices;
+            populateVoices();
+            button.onclick = function (){
+                if (state == "speaking")
+                {
+                    state = "";
+                    button.innerText = "Start";
+                    if (speechSynthesis)
+                        speechSynthesis.cancel();
+                }
+                else
+                {
+                    state = "speaking";
+                    button.innerText = "Stop";
+                    SpeakText();
+                }
+            }
+        </script>
+	</body>
+</html>
