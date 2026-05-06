@@ -36,6 +36,14 @@
 						speaktext.value = value + 1;
 						SpeakText();
 					}
+					else
+						stop();
+                };
+				utterance.onboundary = function (event) {
+					speaktext.focus();
+					speaktext.selectionStart = event.charIndex;
+					speaktext.selectionEnd = speaktext.value.slice(speaktext.selectionStart).search(/\W/) + speaktext.selectionStart;
+					console.log(event.charIndex);
                 };
                 utterance.onerror = function (event) {
                     console.log(`An error has occurred with the speech synthesis: ${event.error}`);
@@ -44,7 +52,7 @@
             }
         </script>
     </head>
-    <body style="text-align: center;">
+    <body style="text-align: center;background-color:#AAA">
         <textarea type="text" style="width:100%;height:200px;font-size:x-large;" id="speaktext">1</textarea>
 		<br />
         <select id="voices" style="font-size: x-large;"></select>
@@ -58,19 +66,22 @@
             populateVoices();
             button.onclick = function (){
                 if (state == "speaking")
-                {
-                    state = "";
-                    button.innerText = "Start";
-                    if (speechSynthesis)
-                        speechSynthesis.cancel();
-                }
+					stop();
                 else
-                {
-                    state = "speaking";
-                    button.innerText = "Stop";
-                    SpeakText();
-                }
+					start();
             }
-        </script>
+			function stop()
+			{
+				state = "";
+				button.innerText = "Start";
+				if (speechSynthesis)
+					speechSynthesis.cancel();
+			}
+			function start(){
+				state = "speaking";
+				button.innerText = "Stop";
+				SpeakText();
+			}
+	</script>
 	</body>
 </html>
