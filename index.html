@@ -1,11 +1,41 @@
 <html lang="en">
     <head>
 		<title>Voice Counting</title>
+		<style>
+			.sideButton{
+				width:95px;
+			}
+		</style>
         <script>
+			const lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+			const shakespeareQuotes = [
+			  "To be, or not to be: that is the question.",
+			  "All the world’s a stage, and all the men and women merely players.",
+			  "The course of true love never did run smooth.",
+			  "Some are born great, some achieve greatness, and some have greatness thrust upon them.",
+			  "Cowards die many times before their deaths; the valiant never taste of death but once.",
+			  "A horse! a horse! my kingdom for a horse!",
+			  "If music be the food of love, play on.",
+			  "Brevity is the soul of wit.",
+			  "The lady doth protest too much, methinks.",
+			  "We are such stuff as dreams are made on.",
+			  "What's done cannot be undone.",
+			  "There is nothing either good or bad, but thinking makes it so.",
+			  "Now is the winter of our discontent.",
+			  "The better part of valour is discretion.",
+			  "Hell is empty and all the devils are here.",
+			  "Love looks not with the eyes, but with the mind.",
+			  "Though she be but little, she is fierce.",
+			  "This above all: to thine own self be true.",
+			  "Men at some time are masters of their fates.",
+			  "The fault, dear Brutus, is not in our stars, but in ourselves."
+			];
             let state = "";            
             
             let voices = [];
             let utterance = null;
+			let speakIndex = 0;
+			let speakIndexEnd = -1;
             function populateVoices() {
                 let newvoices = speechSynthesis.getVoices();
                 if (newvoices.length > voices.length) {
@@ -22,9 +52,23 @@
             function SpeakText() {
                 if (state != "speaking")
                     return;
-                utterance = new SpeechSynthesisUtterance(speaktext.value);
-                utterance.rate = 1;       // Set the speaking rate (0.1 to 10, default is 1)
-                utterance.pitch = 1;      // Set the pitch (0 to 2, default is 1)
+				let speakvalue = speaktext.value;
+				if (speakIndex == speaktext.value.length) //already reached end
+					speakIndex = 0; //start again
+					
+				let selectionStart = speakIndex;				
+				let selectionEnd = speakvalue.indexOf("\n", speakIndex);
+				if (selectionEnd == -1)
+					selectionEnd = speaktext.value.length-1;
+				selectionEnd++;
+				speakvalue = speakvalue.slice(selectionStart,selectionEnd);
+				speaktext.focus();
+				speaktext.selectionStart = selectionStart;
+				speaktext.selectionEnd = selectionEnd;
+				speakIndexEnd = selectionEnd;
+                utterance = new SpeechSynthesisUtterance(speakvalue);
+                utterance.rate = parseFloat(rateSlider.value);       // Set the speaking rate (0.1 to 10, default is 1)
+                utterance.pitch = parseFloat(pitchSlider.value);      // Set the pitch (0 to 2, default is 1)
                 utterance.volume = 1;     // Set the volume (0 to 1, default is 1)
                 const selectedIndex = voiceSelect.value;
                 if (voices[selectedIndex]) {
@@ -38,12 +82,16 @@
 					}
 					else
 						stop();
+					speakIndex = speakIndexEnd;
                 };
 				utterance.onboundary = function (event) {
 					speaktext.focus();
-					speaktext.selectionStart = event.charIndex;
-					speaktext.selectionEnd = speaktext.value.slice(speaktext.selectionStart).search(/\W/) + speaktext.selectionStart;
-					console.log(event.charIndex);
+					speaktext.selectionStart = speakIndex + event.charIndex;
+					let selectEnd = speaktext.value.slice(speaktext.selectionStart).search(/\W/);
+					if (selectEnd > 0)
+						speaktext.selectionEnd = selectEnd + speaktext.selectionStart;
+					else
+						speaktext.selectionEnd = speaktext.value.length;
                 };
                 utterance.onerror = function (event) {
                     console.log(`An error has occurred with the speech synthesis: ${event.error}`);
@@ -53,15 +101,27 @@
         </script>
     </head>
     <body style="text-align: center;background-color:#AAA">
-        <textarea type="text" style="width:100%;height:200px;font-size:x-large;" id="speaktext">1</textarea>
+		<div style="display:flex">
+			<div style="width: 100px;flex-shrink: 0;">
+				<button id="numberBtn" class="sideButton">Counting</button><br />
+				<button id="foxBtn" class="sideButton">Fox</button><br />
+				<button id="loremBtn" class="sideButton">Lorem</button><br />
+				<button id="shakespeareBtn" class="sideButton">Shakespeare</button><br />
+			</div>
+			<textarea type="text" style="flex: 1;width:100%;height:200px;font-size:x-large;" id="speaktext">1</textarea>
+		</div>
 		<br />
         <select id="voices" style="font-size: x-large;"></select>
+		Speed: <input type="range" id="rateSlider" min="0.1" max="2" step="0.1" value="1" />
+		Pitch: <input type="range" id="pitchSlider" min="0" max="2" step="0.1" value="1" />
 		<br />
         <button id="button" style="width:100px;height:50px;font-size: x-large;">Start</button>
         <script>
             const voiceSelect = document.getElementById("voices");
             const button = document.getElementById("button");
             const speaktext = document.getElementById("speaktext");
+			const rateSlider = document.getElementById("rateSlider");
+			const pitchSlider = document.getElementById("pitchSlider");
             speechSynthesis.onvoiceschanged = populateVoices;
             populateVoices();
             button.onclick = function (){
@@ -82,6 +142,34 @@
 				button.innerText = "Stop";
 				SpeakText();
 			}
+			speaktext.onchange = function (){
+				stop();
+				speakIndex = 0;
+			};
+			document.getElementById("numberBtn").onclick= function (){
+				stop();
+				speaktext.value = "1";
+				speakIndex = 0;
+			};
+			document.getElementById("foxBtn").onclick= function (){
+				stop();
+				speaktext.value = "The quick brown fox jumps over the lazy dog";
+				speakIndex = 0;
+			};
+			document.getElementById("loremBtn").onclick= function (){
+				stop();
+				speaktext.value = lorem;
+				speakIndex = 0;
+			};
+			document.getElementById("shakespeareBtn").onclick= function (){
+				stop();
+				speaktext.value = "";
+				shakespeareQuotes.forEach(shakespeareQuote => { 
+					speaktext.value += shakespeareQuote + "\n";
+				});
+				speakIndex = 0;
+			};
+			
 	</script>
 	</body>
 </html>
