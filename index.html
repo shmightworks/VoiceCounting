@@ -48,16 +48,29 @@
                         voiceSelect.appendChild(option);
                     });
                 }
+				const UserDefaultVoice = localStorage.getItem("TTSVoice");
+				let found = false;
+				if (UserDefaultVoice) {
+					found = selectByText(voiceSelect, UserDefaultVoice);
+				}
             }
+			function selectByText(select, text) {
+				const option = [...select.options].find(o => o.text === text);
+				if (option) {
+					option.selected = true;
+					return true;
+				}
+				return false;
+			}
             function SpeakText() {
                 if (state != "speaking")
                     return;
 				let speakvalue = speaktext.value;
-				if (speakIndex == speaktext.value.length) //already reached end
-					speakIndex = 0; //start again
+				if (speaktext.selectionStart == speaktext.value.length) //already reached end
+					speaktext.selectionStart = 0; //start again
 					
-				let selectionStart = speakIndex;				
-				let selectionEnd = speakvalue.indexOf("\n", speakIndex);
+				let selectionStart = speaktext.selectionStart;				
+				let selectionEnd = speakvalue.indexOf("\n", selectionStart);
 				if (selectionEnd == -1)
 					selectionEnd = speaktext.value.length-1;
 				selectionEnd++;
@@ -82,7 +95,7 @@
 					}
 					else
 						stop();
-					speakIndex = speakIndexEnd;
+					speaktext.selectionStart = speakIndex = speakIndexEnd;					
                 };
 				utterance.onboundary = function (event) {
 					speaktext.focus();
@@ -130,6 +143,7 @@
                 else
 					start();
             }
+			
 			function stop()
 			{
 				state = "";
@@ -142,24 +156,45 @@
 				button.innerText = "Stop";
 				SpeakText();
 			}
-			speaktext.onchange = function (){
+			
+			const UserTTSPitch = localStorage.getItem("TTSPitch");
+			pitchSlider.value = UserTTSPitch;
+			const UserTTSRate = localStorage.getItem("TTSRate");
+			rateSlider.value = UserTTSRate;
+			pitchSlider.onchange = function () {
+				if (this.value)
+					localStorage.setItem("TTSPitch", this.value);
+			};
+			rateSlider.onchange = function () {
+				if (this.value)
+					localStorage.setItem("TTSRate", this.value);
+			};
+			voiceSelect.onchange = function () {
+				if (this.value)
+					localStorage.setItem("TTSVoice", this.options[this.selectedIndex].text);
+			};
+			speaktext.onchange = speaktext.onkeypress = function (){
 				stop();
 				speakIndex = 0;
+				speaktext.selectionStart = 0;
 			};
 			document.getElementById("numberBtn").onclick= function (){
 				stop();
 				speaktext.value = "1";
 				speakIndex = 0;
+				speaktext.selectionStart = 0;
 			};
 			document.getElementById("foxBtn").onclick= function (){
 				stop();
 				speaktext.value = "The quick brown fox jumps over the lazy dog";
 				speakIndex = 0;
+				speaktext.selectionStart = 0;
 			};
 			document.getElementById("loremBtn").onclick= function (){
 				stop();
 				speaktext.value = lorem;
 				speakIndex = 0;
+				speaktext.selectionStart = 0;
 			};
 			document.getElementById("shakespeareBtn").onclick= function (){
 				stop();
@@ -168,6 +203,7 @@
 					speaktext.value += shakespeareQuote + "\n";
 				});
 				speakIndex = 0;
+				speaktext.selectionStart = 0;
 			};
 			
 	</script>
